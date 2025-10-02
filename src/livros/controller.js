@@ -36,7 +36,7 @@ const addLivro = async (req, res) => {
         const livroCriado = resultLivro.rows[0];
 
         for (let i = 1; i <= quantidade_exemplares; i++) {
-            const codigo = `${livroCriado.id}-${i}`; 
+            const codigo = `${livroCriado.isbn}-${i}`; 
             await client.query(
                 `INSERT INTO exemplar (codigo, livro_id, status_disponibilidade)
                  VALUES ($1, $2, TRUE)`,
