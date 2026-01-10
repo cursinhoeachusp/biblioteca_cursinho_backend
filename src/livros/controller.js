@@ -196,7 +196,7 @@ const importarCsv = async (req, res) => {
 
             const total = parseInt(quantidade_exemplares);
             for (let i = 1; i <= total; i++) {
-              const codigo = `${livro.id}-${i}`;
+              const codigo = `${livro.isbn}-${i}`;
               await client.query(exemplarQueries.insert, [codigo, livro.id]);
             }
           }
