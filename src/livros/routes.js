@@ -14,6 +14,7 @@ router.get('/isbn/:isbn', controller.getByIsbnCompleto);
 router.post('/import', upload.single('arquivo'), controller.importarCsv);
 router.delete('/isbn/:isbn', controller.removeByIsbn);
 router.get('/:isbn/exemplares-indisponiveis', controller.getExemplaresIndisponiveis);
+router.get('/:isbn/exemplares-disponiveis', controller.getExemplaresDisponiveis);
 
 
 module.exports = router;
