@@ -13,7 +13,7 @@ const getAll = async (req, res) => {
 
 const deleteEmprestimo = async (req, res) => {
   const { usuario_id, exemplar_codigo, data_inicio } = req.params;
-  const dataFormatada = data_inicio.split('T')[0];  // Garantir que a data esteja no formato 'YYYY-MM-DD'
+  const dataFormatada = data_inicio.split('T')[0];
 
   try {
     const result = await pool.query(queries.deleteEmprestimo, [
@@ -35,7 +35,7 @@ const deleteEmprestimo = async (req, res) => {
 
 const renovarEmprestimo = async (req, res) => {
   const { usuario_id, exemplar_codigo, data_inicio } = req.params;
-  const dataFormatada = data_inicio.split('T')[0];  // Garantir o formato 'YYYY-MM-DD'
+  const dataFormatada = data_inicio.split('T')[0];
 
   try {
     const result = await pool.query(queries.renovarEmprestimo, [
@@ -58,60 +58,71 @@ const renovarEmprestimo = async (req, res) => {
 const adicionarEmprestimo = async (req, res) => {
   const { usuario_id, exemplar_codigo, data_inicio, data_fim_previsto } = req.body;
 
-  try {
-    await pool.query('BEGIN');
+  const client = await pool.connect(); 
 
-    const emprestimo = await pool.query(queries.adicionarEmprestimo, [
+  try {
+    await client.query('BEGIN');
+
+    const emprestimo = await client.query(queries.adicionarEmprestimo, [
       usuario_id,
       exemplar_codigo,
       data_inicio,
       data_fim_previsto
     ]);
 
-    await pool.query(queries.atualizarStatusExemplar, [exemplar_codigo]);
+    await client.query(queries.atualizarStatusExemplar, [exemplar_codigo]);
+    await client.query(
+      `DELETE FROM reserva WHERE usuario_id = $1 AND exemplar_codigo = $2`,
+      [usuario_id, exemplar_codigo]
+    );
 
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
 
     res.status(201).json(emprestimo.rows[0]);
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK');
     console.error("Erro ao adicionar empréstimo:", err);
     res.status(500).send("Erro ao adicionar empréstimo");
+  } finally {
+    client.release();
   }
 };
 
 const marcarComoDevolvido = async (req, res) => {
   const { usuario_id, exemplar_codigo, data_inicio } = req.params;
-  const dataFormatada = data_inicio.split('T')[0];  // Garantir o formato 'YYYY-MM-DD'
+  const dataFormatada = data_inicio.split('T')[0];
+
+  const client = await pool.connect(); // Também corrigido aqui para segurança
 
   try {
-    await pool.query('BEGIN');
+    await client.query('BEGIN');
 
-    const result = await pool.query(queries.marcarComoDevolvido, [
+    const result = await client.query(queries.marcarComoDevolvido, [
       usuario_id,
       exemplar_codigo,
       dataFormatada
     ]);
     
     if (result.rowCount === 0) {
-      await pool.query('ROLLBACK');
+      await client.query('ROLLBACK');
       return res.status(404).send("Empréstimo não encontrado para devolução");
     }
     
-    await pool.query(`
+    await client.query(`
       UPDATE exemplar
       SET status_disponibilidade = TRUE
       WHERE codigo = $1
     `, [exemplar_codigo]);
     
-    await pool.query('COMMIT');    
-
+    await client.query('COMMIT');    
 
     res.status(200).send("Empréstimo marcado como devolvido");
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await client.query('ROLLBACK');
     console.error("Erro ao marcar como devolvido:", err);
     res.status(500).send("Erro ao marcar como devolvido");
+  } finally {
+    client.release();
   }
 };
 
