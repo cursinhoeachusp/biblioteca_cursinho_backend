@@ -1,4 +1,4 @@
-# 📚 Biblioteca CPE - Backend API
+# 📚 Biblioteca Popular - Backend API
 API RESTful desenvolvida para gerenciar o sistema de biblioteca do Cursinho Popular. O sistema controla o acervo de livros, exemplares físicos, empréstimos, reservas e penalidades de usuários, garantindo a integridade dos dados e regras de negócio automatizadas.
 
 
