@@ -13,6 +13,7 @@ router.get('/', controller.getAll);
 router.get('/search', controller.searchUsuarios); 
 router.get('/atrasados', controller.getAtrasados);
 router.get('/:id', controller.getById);
+router.get('/resumo/:email', controller.getResumoBiblioteca);
 
 router.post('/', controller.create);
 router.post('/batch', controller.createBatch); 

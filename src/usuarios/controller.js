@@ -223,6 +223,38 @@ const searchUsuarios = async (req, res) => {
   }
 };
 
+const getResumoBiblioteca = async (req, res) => {
+  const { email } = req.params;
+  
+  try {
+    const emprestimos = await pool.query(`
+      SELECT e.data_fim_previsto, l.titulo 
+      FROM emprestimo e
+      JOIN usuario u ON e.usuario_id = u.id
+      JOIN exemplar ex ON e.exemplar_codigo = ex.codigo
+      JOIN livro l ON ex.livro_id = l.id
+      WHERE u.gmail = $1 AND e.data_devolucao IS NULL
+    `, [email]);
+
+    const reservas = await pool.query(`
+      SELECT r.data_efetuacao, l.titulo
+      FROM reserva r
+      JOIN usuario u ON r.usuario_id = u.id
+      JOIN exemplar ex ON r.exemplar_codigo = ex.codigo
+      JOIN livro l ON ex.livro_id = l.id
+      WHERE u.gmail = $1
+    `, [email]);
+
+    res.json({
+      emprestimos: emprestimos.rows,
+      reservas: reservas.rows
+    });
+  } catch (err) {
+    console.error("Erro ao buscar resumo:", err);
+    res.status(500).json({ message: "Erro ao buscar dados." });
+  }
+};
+
 module.exports = {
   getAll,
   getAtrasados,
@@ -231,5 +263,6 @@ module.exports = {
   remove,
   getById,
   createBatch,
-  searchUsuarios
+  searchUsuarios,
+  getResumoBiblioteca,
 };
