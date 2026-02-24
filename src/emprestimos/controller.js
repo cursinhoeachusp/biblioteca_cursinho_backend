@@ -15,21 +15,37 @@ const deleteEmprestimo = async (req, res) => {
   const { usuario_id, exemplar_codigo, data_inicio } = req.params;
   const dataFormatada = data_inicio.split('T')[0];
 
+  const client = await pool.connect(); 
+
   try {
-    const result = await pool.query(queries.deleteEmprestimo, [
+    await client.query('BEGIN'); // Inicia a transação segura
+
+    const result = await client.query(queries.deleteEmprestimo, [
       usuario_id,
       exemplar_codigo,
       dataFormatada
     ]);
 
     if (result.rowCount === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).send("Empréstimo não encontrado");
     }
 
-    res.status(200).send("Empréstimo deletado com sucesso");
+    await client.query(`
+      UPDATE exemplar
+      SET status_disponibilidade = TRUE
+      WHERE codigo = $1
+    `, [exemplar_codigo]);
+
+    await client.query('COMMIT');
+
+    res.status(200).send("Empréstimo deletado e exemplar disponibilizado com sucesso");
   } catch (err) {
-    console.error("Erro ao deletar empréstimo:", err);
-    res.status(500).send("Erro ao deletar empréstimo");
+    await client.query('ROLLBACK');
+    console.error("Erro ao deletar empréstimo e liberar exemplar:", err);
+    res.status(500).send("Erro ao processar a exclusão do empréstimo");
+  } finally {
+    client.release();
   }
 };
 
