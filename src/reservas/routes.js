@@ -5,5 +5,6 @@ const router = Router();
 
 router.post('/', controller.createReserva);
 router.get('/', controller.getAllReservas);
+router.post('/carteirinha', controller.createReservaPelaCarteirinha);
 
 module.exports = router;

@@ -54,7 +54,62 @@ const createReserva = async (req, res) => {
     }
 };
 
+const createReservaPelaCarteirinha = async (req, res) => {
+    const { email, isbn } = req.body;
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Encontra o ID do usuário através do e-mail
+        const userRes = await client.query('SELECT id FROM usuario WHERE gmail = $1', [email]);
+        if (userRes.rowCount === 0) {
+            throw new Error('Usuário não encontrado no sistema da biblioteca.');
+        }
+        const usuario_id = userRes.rows[0].id;
+
+        // 2. Procura UM exemplar desse ISBN que esteja indisponível e puxa a data de devolução prevista
+        const exemplarRes = await client.query(`
+            SELECT e.codigo, emp.data_fim_previsto
+            FROM exemplar e
+            JOIN livro l ON e.livro_id = l.id
+            LEFT JOIN emprestimo emp ON emp.exemplar_codigo = e.codigo AND emp.data_devolucao IS NULL
+            WHERE l.isbn = $1 AND e.status_disponibilidade = false
+            LIMIT 1
+        `, [isbn]);
+
+        if (exemplarRes.rowCount === 0) {
+            throw new Error('Não há exemplares indisponíveis para este livro. Se ele estiver disponível, basta ir à biblioteca retirá-lo!');
+        }
+
+        const { codigo: exemplar_codigo, data_fim_previsto } = exemplarRes.rows[0];
+
+        // 3. Cria a reserva
+        const data_efetuacao = new Date().toISOString().split('T')[0];
+        await client.query(queries.createReserva, [usuario_id, exemplar_codigo, data_efetuacao]);
+
+        await client.query('COMMIT');
+        
+        // Retorna a data em que o livro deve ser devolvido pelo aluno atual
+        res.status(201).json({
+            message: "Reserva efetuada com sucesso!",
+            previsao_devolucao: data_fim_previsto
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(error);
+        if (error.code === '23505') {
+            return res.status(409).json({ message: 'Você já possui uma reserva para este livro.' });
+        }
+        res.status(400).json({ message: error.message || 'Erro ao processar reserva.' });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
     createReserva,
     getAllReservas,
+    createReservaPelaCarteirinha,
 };
