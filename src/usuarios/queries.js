@@ -10,7 +10,7 @@ const getAll =
              u.status_regularidade,
              u.cpf, e.logradouro, e.numero, e.complemento, e.cep
       FROM usuario u
-      LEFT JOIN endereco e ON u.id = e.usuario_id`;
+      LEFT JOIN endereco e ON u.id = e.usuario_id ORDER BY u.id ASC`;
 
 const getAtrasados =
   `SELECT DISTINCT u.id, u.nome, u.gmail, u.telefone, 
@@ -20,7 +20,8 @@ const getAtrasados =
       INNER JOIN emprestimo emp ON emp.usuario_id = u.id
       LEFT JOIN endereco e ON u.id = e.usuario_id
       WHERE emp.data_devolucao IS NULL 
-        AND emp.data_fim_previsto < CURRENT_DATE`;
+        AND emp.data_fim_previsto < CURRENT_DATE
+      ORDER BY u.id ASC`;
 
 const createUser = `
   INSERT INTO usuario (nome, cpf, gmail, telefone)
