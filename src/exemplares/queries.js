@@ -1,3 +1,7 @@
+const getIsbnByLivroId = `
+  SELECT isbn FROM livro WHERE id = $1;
+`;
+
 const remove = `
   DELETE FROM exemplar
   WHERE codigo = $1
@@ -27,5 +31,6 @@ module.exports = {
   countByLivroId,
   insert,
   remove,
-  hasEmprestimosAtivos
+  hasEmprestimosAtivos,
+  getIsbnByLivroId,
 };
