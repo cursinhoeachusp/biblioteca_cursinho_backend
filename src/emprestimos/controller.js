@@ -79,6 +79,23 @@ const adicionarEmprestimo = async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    const penalidadeQuery = `
+      SELECT data_suspensao 
+      FROM penalidade 
+      WHERE usuario_id = $1 
+        AND status_cumprida = FALSE 
+        AND data_suspensao >= CURRENT_DATE
+    `;
+    const penalidadeResult = await client.query(penalidadeQuery, [usuario_id]);
+
+    if (penalidadeResult.rowCount > 0) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ 
+        message: "Operação negada: O usuário possui uma suspensão ativa e não pode realizar novos empréstimos." 
+      });
+    }
+
+
     const emprestimo = await client.query(queries.adicionarEmprestimo, [
       usuario_id,
       exemplar_codigo,
