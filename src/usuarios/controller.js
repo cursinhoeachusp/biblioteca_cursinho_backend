@@ -245,9 +245,20 @@ const getResumoBiblioteca = async (req, res) => {
       WHERE u.gmail = $1
     `, [email]);
 
+    const suspensao = await pool.query(`
+      SELECT p.data_suspensao, c.nome AS causa
+      FROM penalidade p
+      JOIN usuario u ON p.usuario_id = u.id
+      LEFT JOIN penalidade_causa c ON p.causa_id = c.id
+      WHERE u.gmail = $1 
+        AND p.status_cumprida = FALSE 
+        AND p.data_suspensao >= CURRENT_DATE
+    `, [email]);
+
     res.json({
       emprestimos: emprestimos.rows,
-      reservas: reservas.rows
+      reservas: reservas.rows,
+      suspensao: suspensao.rows
     });
   } catch (err) {
     console.error("Erro ao buscar resumo:", err);
